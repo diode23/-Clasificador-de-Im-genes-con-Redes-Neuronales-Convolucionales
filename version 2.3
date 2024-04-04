@@ -1,0 +1,82 @@
+# Importing necessary libraries
+import tensorflow as tf
+from tensorflow.keras import layers
+
+# Defining the function to create the convolutional base
+def create_convolutional_base(input_shape, classes):
+    # Creating the input layer
+    input_layer = layers.Input(shape=input_shape)
+
+    # Creating the convolutional base
+    x = layers.Conv2D(32, (3, 3), activation='relu', padding='same')(input_layer)
+    x = layers.MaxPooling2D((2, 2), padding='same')(x)
+    x = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
+    x = layers.MaxPooling2D((2, 2), padding='same')(x)
+    x = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(x)
+    x = layers.MaxPooling2D((2, 2), padding='same')(x)
+
+    # Flattening the output
+    x = layers.Flatten()(x)
+
+    # Adding a dense layer
+    x = layers.Dense(64, activation='relu')(x)
+
+    # Adding the output layer
+    output_layer = layers.Dense(classes, activation='softmax')(x)
+
+    # Creating the model
+    model = tf.keras.Model(inputs=input_layer, outputs=output_layer)
+
+    return model
+
+# Defining the function to preprocess the image
+def preprocess_image(image):
+    # Resizing the image
+    image = tf.image.resize(image, (224, 224))
+
+    # Normalizing the pixel values
+    image = tf.cast(image, tf.float32) / 255.0
+
+    return image
+
+# Defining the function to load the dataset
+def load_dataset(batch_size):
+    # Loading the dataset
+    dataset = tf.keras.preprocessing.image_dataset_from_directory(
+        directory='path/to/dataset',
+        labels='inferred',
+        label_mode='categorical',
+        batch_size=batch_size,
+        image_size=(224, 224),
+        validation_split=0.2
+    )
+
+    # Preprocessing the images
+    dataset = dataset.map(lambda x, y: (preprocess_image(x), y))
+
+    return dataset
+
+# Defining the function to train the model
+def train_model(model, dataset, epochs):
+    # Compiling the model
+    model.compile(optimizer='adam',
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
+
+    # Training the model
+    model.fit(dataset, epochs=epochs)
+
+# Defining the function to test the model
+def test_model(model, test_data):
+    # Evaluating the model
+    model.evaluate(test_data, verbose=2)
+
+# Defining the function to make predictions
+def predict(model, image):
+    # Preprocessing the image
+    image = preprocess_image(image)
+
+    # Making predictions
+    predictions = model.predict(tf.expand_dims(image, 0))
+
+    return predictions
